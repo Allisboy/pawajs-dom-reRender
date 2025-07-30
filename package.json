@@ -1,0 +1,30 @@
+{
+  "name": "pawajs-dom-rerender",
+  "version": "0.0.1",
+  "description": "Pawajs dom diffing for server html with the current dom",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "pawajs": "^1.0.17"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Allisboy/pawajs-dom-reRender.git"
+  },
+  "keywords": [
+    "pawajs",
+    "pawa-ssr",
+    "ui",
+    "dom",
+    "ssr",
+    "spa"
+  ],
+  "author": "Allwell Oriso-Owubo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Allisboy/pawajs-dom-reRender/issues"
+  },
+  "homepage": "https://github.com/Allisboy/pawajs-dom-reRender#readme"
+}
