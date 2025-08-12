@@ -43,12 +43,13 @@ export const pawaRender=(app,app1) => {
       //     render(app1,parent._context,parent._tree)
       //   })
       // })      
-      console.warn(`miss Matched at`,app._tree,app1._tree)
+      console.warn(`miss Matched at`,app._tree,app1._tree,app1)
       return
     }
      pluginMap.forEach((plugin, name)=>{
       plugin(app, app1)
     })
+    
       if (app._tree.textContextAvoid !== true && app1.textContextAvoid !== true) {
         if (!app.firstElementChild ) {
           
@@ -118,7 +119,7 @@ export const pawaRender=(app,app1) => {
                   newAppTree.push(fetchDomRender(child))
                 })
              }
-            // console.log(newAppTree,'newTree')
+            // console.log(newAppTree,'n ewTree')
          
          // remove child element that doesn't exit with the element children 
        
@@ -162,14 +163,22 @@ export const pawaRender=(app,app1) => {
            
            if (app._tree.children.length === 0) {
              Array.from(app1.children).forEach((child) => {
-              
-                 app.appendChild(child)
+                if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
+                       app.appendChild(child)
+                     }
                  requestAnimationFrame(() => {
-                   keepContext(app._tree.stateContext)
-                  //  console.log(app._tree.stateContext)
-                   app._tree.stateContext._hasRun=false
+                  if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
                      render(child,app._context,app._tree)
                      app._tree.stateContext._hasRun=true
+                     }
                  })
              })
            } else {
@@ -216,8 +225,16 @@ export const pawaRender=(app,app1) => {
             app.insertBefore(obj.newElement,obj.before)
             obj.remove()
             requestAnimationFrame(() => {
-                    keepContext(app._tree.stateContext)
-                     render(obj.newElement,obj.parent._context,obj.parent._tree)
+                    if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
+                      render(obj.newElement,obj.parent._context,obj.parent._tree)
+                     }
+                    //  render(obj.newElement,obj.parent._context,obj.parent._tree)
                  })
           })
          }
@@ -232,8 +249,15 @@ export const pawaRender=(app,app1) => {
             if (siblings) {
               app.insertBefore(child,siblings)
           requestAnimationFrame(() => {
-            keepContext(app._tree.stateContext)
+           if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && !app._scriptDone) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
               render(child,parent._context,parent._tree)
+                     }
           })
 } else {
   // console.log(child._tree,app1._tree);
@@ -242,8 +266,15 @@ export const pawaRender=(app,app1) => {
           }
   parent.appendChild(child)
   requestAnimationFrame(() => {
-    keepContext(app._tree.stateContext)
+     if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
       render(child,parent._context,parent._tree)
+                     }
   })
 }
            })
@@ -281,11 +312,17 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
               
                  getTemplateElementParent(app,(parent)=>parent.appendChild(child))
                  requestAnimationFrame(() => {
-                   keepContext(app._tree.stateContext)
-                  //  console.log(app._tree.stateContext)
-                   app._tree.stateContext._hasRun=false
+                   if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
+
                      render(child,parent._context,parent._tree)
                      app._tree.stateContext._hasRun=true
+                     }
                  })
              })
            } else {
@@ -325,8 +362,16 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
             getTemplateElementParent(app,(parent)=>parent.insertBefore(obj.newElement,obj.before))
             obj.remove()
             requestAnimationFrame(() => {
-                    keepContext(app._tree.stateContext)
+                     if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
+
                      render(obj.newElement,app._context,app._tree)
+                     }
                  })
           })
          }
@@ -336,15 +381,29 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
            newAppTree.forEach((child) => {
                if (siblings) {
           getTemplateElementParent(app,(parent)=>parent.insertBefore(child,siblings))
-          requestAnimationFrame(() => {
-            keepContext(app._tree.stateContext)
+          requestAnimationFrame(() => { 
+            if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
               render(child,app._context,app._tree)
+                     }
           })
 } else {
   getTemplateElementParent(app,(parent)=> parent.appendChild(child))
   requestAnimationFrame(() => {
-    keepContext(app._tree.stateContext)
+  if(app._tree.stateContext._hasRun){
+                      app._tree.stateContext._hasRun=false
+                      keepContext(app._tree.stateContext)
+                    }
+                     if (app._scriptFetching && app._scriptDone === false) {
+                      app.innerHTML=app1.innerHTML
+                     }else{
       render(child,app._context,app._tree)
+                     }
   })
 }
            })

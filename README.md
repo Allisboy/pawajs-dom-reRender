@@ -1,5 +1,5 @@
 # pawajs-dom-reRender
-for pawajs dom diffing with server html
+for pawajs dom diffing with server html (pawa-ssr)
 
 ```javascript
 import {pawaRender} from 'pawajs-dom-reRender'
@@ -75,3 +75,4 @@ try {
 
 #⚠️ pawajs-dom-reRender is a diff engine and not a v-dom engine
 * more update coming soon
+# MIT LICENSE
