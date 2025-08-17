@@ -1,8 +1,9 @@
-import {PawaElement} from 'pawajs/pawaElement.js';
-import Pawa, {setStateContext,render, keepContext}from 'pawajs';
-import {sanitizeTemplate} from 'pawajs/utils.js';
-import { pawaCompare, pawaTree } from './compare.js';
+import {PawaElement} from '../example/pawajs/pawaElement.js';
+import Pawa, {setStateContext,render, keepContext}from '../example/pawajs/index.js';
+import {sanitizeTemplate} from '../example/pawajs/utils.js';
+import { pawaCompare} from './compare.js';
 import { componentSettings, fetchDomRender } from './smallRender.js';
+// next is to reArrange the element accordingly to the updated style
 const scheduled = new Set();
 let rafScheduled = false;
 
@@ -52,8 +53,8 @@ export const pawaRender=(app,app1) => {
     
       if (app._tree.textContextAvoid !== true && app1.textContextAvoid !== true) {
         if (!app.firstElementChild ) {
-          
-          app.textContext=app1.textContext
+          const text=app1.textContent
+          app.textContent=text
         }
       }
       
@@ -62,6 +63,7 @@ export const pawaRender=(app,app1) => {
       Array.from(app1.attributes).forEach((attr) => {
         
           if (!app._pawaAttribute[attr.name]) {
+            if(app._preRenderAvoid.includes(attr.name))return //attribute to avoid because client is controlling updates like animation etc
             app.setAttribute(attr.name,attr.value)
           }
       })
@@ -70,9 +72,10 @@ export const pawaRender=(app,app1) => {
       //this category is for element that has pawajs condition directives 
       //they are this same means the directives original children are the clone nodes of the same element
         app1.removeAttribute(app._tree.primaryAttribute)
+      // console.log(app,app1)
       
-      app._tree.children.forEach((appTree) => {
-        
+        app._tree.children.forEach((appTree) => {
+        console.log(appTree)
          scheduleRender(() => {
            if(app._tree.primaryAttribute === 'for'){
                app1.setAttribute('for-unique',appTree.pawaAttributes['for-unique'])
@@ -124,6 +127,7 @@ export const pawaRender=(app,app1) => {
          // remove child element that doesn't exit with the element children 
        
          Array.from(app._tree.children).forEach((child) =>{
+          //  console.log(child);
            
            let matched=false
            newAppTree.forEach((newChild) => {
@@ -146,7 +150,7 @@ export const pawaRender=(app,app1) => {
            if (!matched) {
             // removeElement.push(child)
 
-              // console.log(child.el,app1)
+              // console.log(app,app1)
              child.el._remove()
            }
          })
@@ -165,7 +169,7 @@ export const pawaRender=(app,app1) => {
              Array.from(app1.children).forEach((child) => {
                 if (app._scriptFetching && app._scriptDone === false) {
                       app.innerHTML=app1.innerHTML
-                     }else{
+                     }else{              
                        app.appendChild(child)
                      }
                  requestAnimationFrame(() => {

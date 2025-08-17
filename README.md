@@ -74,5 +74,6 @@ try {
 ```
 
 #⚠️ pawajs-dom-reRender is a diff engine and not a v-dom engine
-* more update coming soon
+* more update coming soon....
+* currently pawajs-dom-reRender isn't capable to reArrange the element perfectly now so server loop filtering won't work perfectly but its capable to do it so we currently working on it.
 # MIT LICENSE

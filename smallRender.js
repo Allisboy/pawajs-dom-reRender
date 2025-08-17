@@ -1,5 +1,5 @@
-import { PawaElement } from "pawajs/pawaElement.js"
-import {getCurrentContext, useInsert, useValidateProps} from 'pawajs'
+import { PawaElement } from "../example/pawajs/pawaElement.js"
+import {getCurrentContext, useInsert, useValidateProps} from '../example/pawajs/index.js'
 export const fetchDomRender=(el,tree)=>{
     if (el === null) {
         return
@@ -8,7 +8,7 @@ export const fetchDomRender=(el,tree)=>{
   
   let appTree = {
   element: el.tagName,
-  serverKey:el.getAttribute('server-key'),
+  serverKey:el.getAttribute('s-key'),
   pawaAttributes: el._pawaAttribute|| {},
   isComponent: el._componentOrTemplate || el._isElementComponent || false,
   elementComponent:el._isElementComponent,
