@@ -1,6 +1,6 @@
-import {PawaElement} from '../example/pawajs/pawaElement.js';
-import Pawa, {setStateContext,render, keepContext}from '../example/pawajs/index.js';
-import {sanitizeTemplate} from '../example/pawajs/utils.js';
+import {PawaElement} from 'pawajs/pawaElement.js';
+import Pawa, {setStateContext,render, keepContext}from 'pawajs/index.js';
+import {sanitizeTemplate} from 'pawajs/utils.js';
 import { pawaCompare} from './compare.js';
 import { componentSettings, fetchDomRender } from './smallRender.js';
 // next is to reArrange the element accordingly to the updated style
@@ -35,6 +35,7 @@ export const registerPlugin=(objects)=>{
 
 
 export const pawaRender=(app,app1) => {
+  app1._contexts=app._context //transfer context
   //compare current element tree with the fetched element tree
     if (!pawaCompare(app,fetchDomRender(app1))) {
       // scheduleRender(()=>{
@@ -50,23 +51,25 @@ export const pawaRender=(app,app1) => {
      pluginMap.forEach((plugin, name)=>{
       plugin(app, app1)
     })
-    
-      if (app._tree.textContextAvoid !== true && app1.textContextAvoid !== true) {
-        if (!app.firstElementChild ) {
-          const text=app1.textContent
-          app.textContent=text
-        }
+    if (app._tree.textContextAvoid !== true && app1.textContextAvoid !== true) {
+      if (!app.firstElementChild && !app1.firstElementChild) {
+        const text=app1.textContent
+        app.textContent=text
       }
-      
-      
-      //// Attributes 
-      Array.from(app1.attributes).forEach((attr) => {
-        
-          if (!app._pawaAttribute[attr.name]) {
+    }
+    const promisedArray=[]
+    
+    //// Attributes 
+    Array.from(app1.attributes).forEach((attr) => {
+      if (attr.name.startsWith('-') || attr.name.startsWith(':')) {
+        return
+      }
+      if (!app._pawaAttribute[attr.name]) {
             if(app._preRenderAvoid.includes(attr.name))return //attribute to avoid because client is controlling updates like animation etc
-            app.setAttribute(attr.name,attr.value)
+             app.setAttribute(attr.name,attr.value)   
           }
       })
+            
        
      if (app._tree.thisSame) {
       //this category is for element that has pawajs condition directives 
@@ -75,7 +78,6 @@ export const pawaRender=(app,app1) => {
       // console.log(app,app1)
       
         app._tree.children.forEach((appTree) => {
-        console.log(appTree)
          scheduleRender(() => {
            if(app._tree.primaryAttribute === 'for'){
                app1.setAttribute('for-unique',appTree.pawaAttributes['for-unique'])
@@ -98,6 +100,16 @@ export const pawaRender=(app,app1) => {
          const compo=stateContext.component(app2)
        // console.log(app._tree.children[1])
          div.innerHTML=sanitizeTemplate(compo)
+              if(Object.entries(app1._restProps).length > 0){
+      const findElement=div.querySelector('[--]') || div.querySelector('[rest]')
+      if (findElement) {
+        for (const [key,value] of Object.entries(app1._restProps)) {
+            findElement.setAttribute(value.name,value.value)
+            findElement.removeAttribute('--')
+            findElement.removeAttribute('rest')
+      }
+    }
+  }
          Array.from(div.children).forEach((child,index) => {
           // console.log(child)
              scheduleRender(() => {
@@ -127,7 +139,6 @@ export const pawaRender=(app,app1) => {
          // remove child element that doesn't exit with the element children 
        
          Array.from(app._tree.children).forEach((child) =>{
-          //  console.log(child);
            
            let matched=false
            newAppTree.forEach((newChild) => {
@@ -144,154 +155,162 @@ export const pawaRender=(app,app1) => {
                }
            })
            if (matched) { // the element matched together tell the diff engine 
-             //later make it false
-             child.preRender=true
-           }
-           if (!matched) {
+            //later make it false
+            child.preRender=true
+          }
+          if (!matched) {
             // removeElement.push(child)
-
-              // console.log(app,app1)
-             child.el._remove()
+              const promised=new Promise((resolve)=>{
+                child.el._deCompositionElement=true
+                child.el._isKill=true
+                child.el._remove(()=>resolve(true))
+              })
+              promisedArray.push(promised)
            }
          })
         
          newAppTree.forEach((child) => {
             child._tree.matched=false
          })
-         //later add for template too
-         if (app._tree.element === 'TEMPLATE') {
-            forTemplateElement({app,app1,newAppTree,parent,parentTree})
-         }
-         // update the current dom element from the fetch element
-         if ( app1.children.length > app._tree.children.length && app._tree.element !== 'TEMPLATE') {
-           
-           if (app._tree.children.length === 0) {
-             Array.from(app1.children).forEach((child) => {
-                if (app._scriptFetching && app._scriptDone === false) {
-                      app.innerHTML=app1.innerHTML
-                     }else{              
-                       app.appendChild(child)
-                     }
-                 requestAnimationFrame(() => {
-                  if(app._tree.stateContext._hasRun){
-                      app._tree.stateContext._hasRun=false
-                      keepContext(app._tree.stateContext)
-                    }
-                     if (app._scriptFetching && app._scriptDone === false) {
-                      app.innerHTML=app1.innerHTML
-                     }else{
-                     render(child,app._context,app._tree)
-                     app._tree.stateContext._hasRun=true
-                     }
-                 })
-             })
-           } else {
-             let lastMatched
-             let siblings 
-             const insertNewOne=[]
-            //  console.log(app._tree)
-             app._tree.children.forEach(child =>{
-          //  let matched=false
-           newAppTree.forEach((newChild,index) => {
-             if (child.alreadyMatched) {
-               return
-             }
-             if (pawaCompare(child.el,newChild)) {
-               newAppTree.splice(index,1)
-               //  matched=true
-               lastMatched=child
-                 child.alreadyMatched=true
-                //  console.log(child,newChild);
-                 
-               } else {
-                // next step is to make sure that the element does not enter double 
-                if (!newChild._tree.inserted) {
-                  newChild._tree.inserted=true
-                  newChild._tree.beforeElement=child.el
-                  insertNewOne.push({before:child.el,
-                  newElement:newChild,parent:parent,remove:()=>newAppTree.splice(index,1)})
-               }
-                }
-           })
-           
-         })
-         app._tree.children.forEach(child =>{
-          child.alreadyMatched=false
-          
-         })
-         //insert the new element 
-         if (insertNewOne.length > 0) {
-          //  console.log(insertNewOne)
-          insertNewOne.forEach(obj=>{
-            if(obj.newElement._tree.isMatched){
-              return
-            }
-            app.insertBefore(obj.newElement,obj.before)
-            obj.remove()
-            requestAnimationFrame(() => {
-                    if(app._tree.stateContext._hasRun){
-                      app._tree.stateContext._hasRun=false
-                      keepContext(app._tree.stateContext)
-                    }
-                     if (app._scriptFetching && app._scriptDone === false) {
-                      app.innerHTML=app1.innerHTML
-                     }else{
-                      render(obj.newElement,obj.parent._context,obj.parent._tree)
-                     }
-                    //  render(obj.newElement,obj.parent._context,obj.parent._tree)
-                 })
-          })
-         }
-         //insert the other element
-         if (newAppTree.length > 0) {
-          // console.log(lastMatched,app);
-          siblings=lastMatched?.el?.nextElementSibling
-          newAppTree.forEach((child) => {
-            if(child._tree.isMatched){
-              return
-            }
-            if (siblings) {
-              app.insertBefore(child,siblings)
-          requestAnimationFrame(() => {
-           if(app._tree.stateContext._hasRun){
-                      app._tree.stateContext._hasRun=false
-                      keepContext(app._tree.stateContext)
-                    }
-                     if (app._scriptFetching && !app._scriptDone) {
-                      app.innerHTML=app1.innerHTML
-                     }else{
-              render(child,parent._context,parent._tree)
-                     }
-          })
-} else {
-  // console.log(child._tree,app1._tree);
-  if(child._tree.isMatched){
-            return
-          }
-  parent.appendChild(child)
-  requestAnimationFrame(() => {
-     if(app._tree.stateContext._hasRun){
-                      app._tree.stateContext._hasRun=false
-                      keepContext(app._tree.stateContext)
-                    }
-                     if (app._scriptFetching && app._scriptDone === false) {
-                      app.innerHTML=app1.innerHTML
-                     }else{
-      render(child,parent._context,parent._tree)
-                     }
-  })
-}
-           })
-         }
+         Promise.all(promisedArray).then(()=>{//let animation run before adding
+           if (app._tree.element === 'TEMPLATE') {
+              forTemplateElement({app,app1,newAppTree,parent,parentTree})
            }
-         }
-         const preRenderTree=app._tree.children.filter(tree => tree.preRender=== true)
-         
-       preRenderTree.forEach((child) => {
-           scheduleRender(() => {
-               pawaRender(child.el,child.matchedNode)
+           // update the current dom element from the fetch element
+           if ( app1.children.length > app._tree.children.length && app._tree.element !== 'TEMPLATE') {
+             
+             if (app._tree.children.length === 0) {
+               Array.from(app1.children).forEach((child) => {
+                  if (app._scriptFetching && app._scriptDone === false) {
+                        app.innerHTML=app1.innerHTML
+                       }else{              
+                         app.appendChild(child)
+                       }
+                   requestAnimationFrame(() => {
+                    if(app._tree.stateContext._hasRun){
+                        app._tree.stateContext._hasRun=false
+                        keepContext(app._tree.stateContext)
+                      }
+                       if (app._scriptFetching && app._scriptDone === false) {
+                        app.innerHTML=app1.innerHTML
+                       }else{
+                       render(child,app._context,app._tree)
+                       app._tree.stateContext._hasRun=true
+                       }
+                   })
+               })
+             } else {
+               let lastMatched
+               let siblings 
+               const insertNewOne=[]
+              //  console.log(app._tree)
+               app._tree.children.forEach(child =>{
+            //  let matched=false
+             newAppTree.forEach((newChild,index) => {
+               if (child.alreadyMatched) {
+                 return
+               }
+               if (pawaCompare(child.el,newChild)) {
+                 newAppTree.splice(index,1)
+                 //  matched=true
+                 lastMatched=child
+                   child.alreadyMatched=true
+                  //  console.log(child,newChild);
+                   
+                 } else {
+                  // next step is to make sure that the element does not enter double 
+                  if (!newChild._tree.inserted) {
+                    newChild._tree.inserted=true
+                    newChild._tree.beforeElement=child.el
+                    insertNewOne.push({before:child.el,
+                    newElement:newChild,parent:parent,remove:()=>newAppTree.splice(index,1)})
+                 }
+                  }
+             })
+             
            })
-       })
+           app._tree.children.forEach(child =>{
+            child.alreadyMatched=false
+            
+           })
+           //insert the new element 
+           if (insertNewOne.length > 0) {
+            //  console.log(insertNewOne)
+            insertNewOne.forEach(obj=>{
+              if(obj.newElement._tree.isMatched){
+                return
+              }
+              app.insertBefore(obj.newElement,obj.before)
+              obj.remove()
+              requestAnimationFrame(() => {
+                      if(app._tree.stateContext._hasRun){
+                        app._tree.stateContext._hasRun=false
+                        keepContext(app._tree.stateContext)
+                      }
+                       if (app._scriptFetching && app._scriptDone === false) {
+                        app.innerHTML=app1.innerHTML
+                       }else{
+                        render(obj.newElement,obj.parent._context,obj.parent._tree)
+                       }
+                      app._tree.stateContext._hasRun=true
+                   })
+            })
+           }
+           //insert the other element
+           if (newAppTree.length > 0) {
+            // console.log(lastMatched,app);
+            siblings=lastMatched?.el?.nextElementSibling
+            newAppTree.forEach((child) => {
+              if(child._tree.isMatched){
+                return
+              }
+              if (siblings) {
+                app.insertBefore(child,siblings)
+            requestAnimationFrame(() => {
+             if(app._tree.stateContext._hasRun){
+                        app._tree.stateContext._hasRun=false
+                        keepContext(app._tree.stateContext)
+                      }
+                       if (app._scriptFetching && !app._scriptDone) {
+                        app.innerHTML=app1.innerHTML
+                       }else{
+                render(child,parent._context,parent._tree)
+                       }
+                       app._tree.stateContext._hasRun=true
+            })
+  } else {
+    // console.log(child._tree,app1._tree);
+    if(child._tree.isMatched){
+              return
+            }
+    parent.appendChild(child)
+    requestAnimationFrame(() => {
+       if(app._tree.stateContext._hasRun){
+                        app._tree.stateContext._hasRun=false
+                        keepContext(app._tree.stateContext)
+                      }
+                       if (app._scriptFetching && app._scriptDone === false) {
+                        app.innerHTML=app1.innerHTML
+                       }else{
+        render(child,parent._context,parent._tree)
+                       }
+                       app._tree.stateContext._hasRun=true
+    })
+  }
+             })
+           }
+             }
+           }
+           const preRenderTree=app._tree.children.filter(tree => tree.preRender=== true)
+           
+         preRenderTree.forEach((child) => {
+             scheduleRender(() => {
+                 pawaRender(child.el,child.matchedNode)
+             })
+         })
+
+         })
+         //later add for template too
        
        }
      }
@@ -325,8 +344,8 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
                      }else{
 
                      render(child,parent._context,parent._tree)
-                     app._tree.stateContext._hasRun=true
-                     }
+                    }
+                    app._tree.stateContext._hasRun=true
                  })
              })
            } else {
@@ -363,6 +382,7 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
          //insert the new element 
          if (insertNewOne.length > 0) {
           insertNewOne.forEach(obj=>{
+            consol.log(obj.before)
             getTemplateElementParent(app,(parent)=>parent.insertBefore(obj.newElement,obj.before))
             obj.remove()
             requestAnimationFrame(() => {
@@ -376,6 +396,7 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
 
                      render(obj.newElement,app._context,app._tree)
                      }
+                     app._tree.stateContext._hasRun=true
                  })
           })
          }
@@ -395,6 +416,7 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
                      }else{
               render(child,app._context,app._tree)
                      }
+                     app._tree.stateContext=true
           })
 } else {
   getTemplateElementParent(app,(parent)=> parent.appendChild(child))
@@ -408,6 +430,7 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
                      }else{
       render(child,app._context,app._tree)
                      }
+                     app._tree.stateContext=true
   })
 }
            })

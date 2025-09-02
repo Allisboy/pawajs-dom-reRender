@@ -1,10 +1,11 @@
-import { PawaElement } from "../example/pawajs/pawaElement.js"
-import {getCurrentContext, useInsert, useValidateProps} from '../example/pawajs/index.js'
+import { PawaElement } from "pawajs/pawaElement.js"
+import {getCurrentContext, useInsert, useValidateProps} from 'pawajs/index.js'
 export const fetchDomRender=(el,tree)=>{
     if (el === null) {
         return
     }
-    PawaElement.Element(el)
+    const context=el._contexts || {}
+    PawaElement.Element(el,context)
   
   let appTree = {
   element: el.tagName,
@@ -38,8 +39,8 @@ export const componentSettings=(el,app1)=>{
         /**
          * @type {DocumentFragment}
          */
-        // console.log(app1._props);
-        
+
+        // PawaElement.Element(app1,{...el._context})
         const slot=app1._slots
         const slots={}
         stateContext._hasRun=true

@@ -1,6 +1,6 @@
 {
   "name": "pawajs-dom-rerender",
-  "version": "0.0.5",
+  "version": "0.0.10",
   "type": "module",
   "description": "Pawajs dom diffing for server html with the current dom",
   "main": "index.js",
