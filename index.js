@@ -240,7 +240,11 @@ export const pawaRender=(app,app1) => {
               if(obj.newElement._tree.isMatched){
                 return
               }
-              app.insertBefore(obj.newElement,obj.before)
+              if(obj.before.isConnected){
+                app.insertBefore(obj.newElement,obj.before)
+              }else{
+                app.insertBefore(obj.newElement,obj.before._underControl)
+              }
               obj.remove()
               requestAnimationFrame(() => {
                       if(app._tree.stateContext._hasRun){
