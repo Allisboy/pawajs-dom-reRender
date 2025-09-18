@@ -326,18 +326,22 @@ export const pawaRender=(app,app1) => {
 
 const getTemplateElementParent=(el,callback)=>{
   if (el._tree.parent.element === 'TEMPLATE' ) {
-    getTemplateElementParent(el._tree.parent.el)
+    getTemplateElementParent(el._tree.parent.el,callback)
   }else{
     callback(el._tree.parent.el)
   }
 }
 const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
   if ( app1.content.children.length > app._tree.children.length ) {
-           
-           if (app._tree.children.length === 0) {
-             Array.from(app1.content.children).forEach((child) => {
+          // if (!app.isConnected) {
+          //   return
+          // }
+          
+          if (app._tree.children.length === 0) {
+            if(!app._underControl.isConnected) return
+            Array.from(app1.content.children).forEach((child) => {
               
-                 getTemplateElementParent(app,(parent)=>parent.appendChild(child))
+                 getTemplateElementParent(app,(parent)=>parent.insertBefore(child,app._underControl))
                  requestAnimationFrame(() => {
                    if(app._tree.stateContext._hasRun){
                       app._tree.stateContext._hasRun=false
@@ -371,6 +375,7 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
                  
                  lastMatched=child
                } else {
+                // console.log('true')
                 // next step is to make sure that the element does not enter double 
                 insertNewOne.push({before:child.el,
                   newElement:newChild,parent:app,remove:()=>newAppTree.splice(index,1)})
@@ -386,7 +391,7 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
          //insert the new element 
          if (insertNewOne.length > 0) {
           insertNewOne.forEach(obj=>{
-            consol.log(obj.before)
+            // consol.log(obj.before)
             getTemplateElementParent(app,(parent)=>parent.insertBefore(obj.newElement,obj.before))
             obj.remove()
             requestAnimationFrame(() => {
@@ -406,10 +411,12 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
          }
          //insert the other element
          if (newAppTree.length > 0) {
-           siblings=lastMatched.el.nextElementSibling
+           siblings=lastMatched.el.nextSibling
            newAppTree.forEach((child) => {
                if (siblings) {
-          getTemplateElementParent(app,(parent)=>parent.insertBefore(child,siblings))
+          getTemplateElementParent(app,(parent)=>{
+              parent.insertBefore(child,siblings)
+          })
           requestAnimationFrame(() => { 
             if(app._tree.stateContext._hasRun){
                       app._tree.stateContext._hasRun=false
@@ -423,7 +430,7 @@ const forTemplateElement=({app1,app,newAppTree,parent,parentTree})=>{
                      app._tree.stateContext=true
           })
 } else {
-  getTemplateElementParent(app,(parent)=> parent.appendChild(child))
+  getTemplateElementParent(app,(parent)=> parent.insertBefore(child,app._underControl))
   requestAnimationFrame(() => {
   if(app._tree.stateContext._hasRun){
                       app._tree.stateContext._hasRun=false
