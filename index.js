@@ -1,6 +1,6 @@
-import {PawaElement} from 'pawajs/pawaElement.js';
-import Pawa, {setStateContext,render, keepContext}from 'pawajs/index.js';
-import {sanitizeTemplate} from 'pawajs/utils.js';
+import {PawaElement} from '../example/pawajs/pawaElement.js';
+import Pawa, {setStateContext,render, keepContext, dependentPawaAttribute}from '../example/pawajs/index.js';
+import {sanitizeTemplate,propsValidator} from '../example/pawajs/utils.js';
 import { pawaCompare} from './compare.js';
 import { componentSettings, fetchDomRender } from './smallRender.js';
 // next is to reArrange the element accordingly to the updated style
@@ -64,7 +64,7 @@ export const pawaRender=(app,app1) => {
       if (attr.name.startsWith('-') || attr.name.startsWith(':')) {
         return
       }
-      if (!app._pawaAttribute[attr.name]) {
+      if (!app._pawaAttribute[attr.name] || !dependentPawaAttribute.has(attr.name)) {
             if(app._preRenderAvoid.includes(attr.name))return //attribute to avoid because client is controlling updates like animation etc
              app.setAttribute(attr.name,attr.value)   
           }
@@ -76,7 +76,6 @@ export const pawaRender=(app,app1) => {
       //they are this same means the directives original children are the clone nodes of the same element
         app1.removeAttribute(app._tree.primaryAttribute)
       // console.log(app,app1)
-      
         app._tree.children.forEach((appTree) => {
          scheduleRender(() => {
            if(app._tree.primaryAttribute === 'for'){
@@ -96,8 +95,15 @@ export const pawaRender=(app,app1) => {
          setStateContext(stateContext)
         const app2= componentSettings(app,app1)
          const div=document.createElement('div')
-         
-         const compo=stateContext.component(app2)
+         let done=true
+         if (Object.entries(app._component.validPropRule).length > 0) {
+          done= propsValidator(app._component.validPropRule,{...app2.prop,...app2.slots},app._componentName,app1._template,app1)
+         }
+         Object.assign(app2.app,app1._props)
+         let compo=''
+         if(done){
+            compo=stateContext.component(app2.app)
+         }
        // console.log(app._tree.children[1])
          div.innerHTML=sanitizeTemplate(compo)
               if(Object.entries(app1._restProps).length > 0){

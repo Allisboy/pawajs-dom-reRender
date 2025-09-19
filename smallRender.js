@@ -1,5 +1,5 @@
-import { PawaElement } from "pawajs/pawaElement.js"
-import {getCurrentContext, useInsert, useValidateProps} from 'pawajs/index.js'
+import { PawaElement } from "../example/pawajs/pawaElement.js"
+import {getCurrentContext, useInsert} from '../example/pawajs/index.js'
 export const fetchDomRender=(el,tree)=>{
     if (el === null) {
         return
@@ -56,9 +56,9 @@ export const componentSettings=(el,app1)=>{
     
         const app = {
           children,
-          app:{insert,useValidateProps},
+          app:{insert},
           ...slots,
           ...app1._props
         }
-        return app
+        return {app,slots,prop:app1._props}
 }

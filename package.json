@@ -1,6 +1,6 @@
 {
   "name": "pawajs-dom-rerender",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "type": "module",
   "description": "Pawajs dom diffing for server html with the current dom",
   "main": "index.js",
@@ -8,7 +8,7 @@
     "test": "node example/text.js"
   },
   "devDependencies": {
-    "pawajs": "^1.0.27"
+    "pawajs": "^1.0.34"
   },
   "repository": {
     "type": "git",
@@ -19,8 +19,7 @@
     "pawa-ssr",
     "ui",
     "dom",
-    "ssr",
-    "spa"
+    "reconciler"
   ],
   "author": "Allwell Oriso-Owubo",
   "license": "MIT",
